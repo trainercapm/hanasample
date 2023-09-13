@@ -1,0 +1,44 @@
+_schema-version: '3.1'
+ID: btp_be
+version: 1.0.0
+description: "A simple CAP project."
+parameters:
+  enable-parallel-deployments: true
+build-parameters:
+  before-all:
+    - builder: custom
+      commands:
+        - npx cds build --production
+modules:
+  - name: BTP_BE_PRODUCT
+    type: nodejs
+    path: gen/srv
+    parameters:
+      buildpack: nodejs_buildpack
+    build-parameters:
+      builder: npm
+    provides:
+      - name: srv-api # required by consumers of CAP services (e.g. approuter)
+        properties:
+          srv-url: ${default-url}
+    requires:
+      - name:  hdi_BTP_DB_PRODUCT
+
+  - name: BTP_DB_PRODUCT
+    type: hdb
+    path: gen/db
+    parameters:
+      buildpack: nodejs_buildpack
+    requires:
+      - name:  hdi_BTP_DB_PRODUCT
+        properties:
+          TARGET_CONTAINER: ~{hdi-container-name}
+
+resources:
+  - name: hdi_BTP_DB_PRODUCT
+    type: com.sap.xs.hdi-container
+    parameters:
+      service: hana
+      service-plan: hdi-shared
+    properties:
+       hdi-container-name: ${service-name}
